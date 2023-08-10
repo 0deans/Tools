@@ -10,7 +10,7 @@ import java.nio.file.Path;
 public class ApplyPatches {
     public static void main(String[] args) throws IOException {
         if (args.length < 3) {
-            System.out.println("Usage: test <base.jar> <output_folder> <patches\\joined>");
+            System.out.println("Usage: ApplyPatches <base.jar> <output_folder> <patches\\joined>");
             return;
         }
 
