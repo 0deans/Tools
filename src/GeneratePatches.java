@@ -1,5 +1,4 @@
-import codechicken.diffpatch.cli.PatchOperation;
-import codechicken.diffpatch.util.PatchMode;
+import codechicken.diffpatch.cli.DiffOperation;
 import codechicken.diffpatch.util.archiver.ArchiveFormat;
 import utils.TimeStamp;
 
@@ -7,10 +6,10 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 
-public class ApplyPatches {
+public class GeneratePatches {
     public static void main(String[] args) throws IOException {
         if (args.length < 3) {
-            System.out.println("Usage: test <base.jar> <output_folder> <patches\\joined>");
+            System.out.println("Usage: GeneratePatches <base.jar> <output.zip> <patched.jar>");
             return;
         }
 
@@ -18,20 +17,15 @@ public class ApplyPatches {
 
         Path basePath = new File(args[0]).toPath();
         Path outputPath = new File(args[1]).toPath();
-        Path patchesPath = new File(args[2]).toPath();
-        Path rejectsPath = new File("reject").toPath();
+        Path patchedPath = new File(args[2]).toPath();
 
-        PatchOperation.Builder builder = PatchOperation.builder()
-                .basePath(basePath)
-                .patchesPath(patchesPath)
-                .outputPath(outputPath, ArchiveFormat.findFormat("jar"))
-                .rejectsPath(rejectsPath, ArchiveFormat.findFormat("zip"))
-                .verbose(false)
-                .summary(true)
-                .mode(PatchMode.EXACT)
+        DiffOperation.Builder builder = DiffOperation.builder()
                 .aPrefix("a/")
                 .bPrefix("b/")
-                .patchesPrefix("");
+                .summary(true)
+                .outputPath(outputPath, ArchiveFormat.ZIP)
+                .aPath(basePath)
+                .bPath(patchedPath);
 
         var result = builder.build().operate();
 
