@@ -16,8 +16,8 @@ public class Strip {
         TimeStamp time = TimeStamp.fromNow(System.currentTimeMillis());
 
         try (ZipFile inputZip = new ZipFile(inputFilePath);
-             ZipOutputStream outputZip = new ZipOutputStream(new FileOutputStream(outputFilePath))) {
-
+             ZipOutputStream outputZip = new ZipOutputStream(new FileOutputStream(outputFilePath))
+        ) {
             inputZip.stream()
                     .filter(entry -> entry.getName().endsWith(".class"))
                     .forEach(entry -> {

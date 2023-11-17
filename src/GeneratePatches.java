@@ -28,6 +28,7 @@ public class GeneratePatches {
                 .bPath(patchedPath);
 
         var result = builder.build().operate();
+        result.summary.print(System.out, true);
 
         int exit = result.exit;
         if (exit != 0 && exit != 1) {

@@ -9,8 +9,8 @@ import java.nio.file.Path;
 
 public class ApplyPatches {
     public static void main(String[] args) throws IOException {
-        if (args.length < 3) {
-            System.out.println("Usage: ApplyPatches <base.jar> <output_folder> <patches\\joined>");
+        if (args.length < 4) {
+            System.out.println("Usage: ApplyPatches <base.jar> <output_folder> <patches_folder> <rejects_folder>");
             return;
         }
 
@@ -19,7 +19,7 @@ public class ApplyPatches {
         Path basePath = new File(args[0]).toPath();
         Path outputPath = new File(args[1]).toPath();
         Path patchesPath = new File(args[2]).toPath();
-        Path rejectsPath = new File("reject").toPath();
+        Path rejectsPath = new File(args[3]).toPath();
 
         PatchOperation.Builder builder = PatchOperation.builder()
                 .basePath(basePath)
@@ -34,6 +34,7 @@ public class ApplyPatches {
                 .patchesPrefix("");
 
         var result = builder.build().operate();
+        result.summary.print(System.out, true);
 
         int exit = result.exit;
         if (exit != 0 && exit != 1) {

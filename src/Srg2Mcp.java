@@ -2,17 +2,16 @@ import com.google.common.io.Files;
 import de.siegmar.fastcsv.reader.NamedCsvReader;
 import utils.TimeStamp;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 public class Srg2Mcp {
+    private static final Pattern SRG_FINDER = Pattern.compile("(f|m|p)_\\d+?_");
 
     public static void main(String[] args) throws IOException {
         if (args.length < 2) {
@@ -20,13 +19,10 @@ public class Srg2Mcp {
             return;
         }
 
-        String mappingsFilePath = args[0];
-        String srcFolderPath = args[1];
-
         long startTime = System.currentTimeMillis();
 
-        File mappings = new File(mappingsFilePath);
-        File srcFolder = new File(srcFolderPath);
+        File mappings = new File(args[0]);
+        File srcFolder = new File(args[1]);
 
         if (!mappings.exists() || !mappings.isFile()) {
             System.out.println("Error: Mappings file not found.");
@@ -39,7 +35,7 @@ public class Srg2Mcp {
         }
 
         Map<String, String> names = loadMappings(mappings);
-        processFilesInFolder(srcFolder, names);
+        processFolder(srcFolder, names);
 
         TimeStamp time = TimeStamp.fromNow(startTime);
         System.out.printf("Finished in: %s", time);
@@ -48,20 +44,22 @@ public class Srg2Mcp {
     private static Map<String, String> loadMappings(File mappings) throws IOException {
         Map<String, String> names = new HashMap<>();
         try (ZipFile zip = new ZipFile(mappings)) {
-            zip.stream().filter(e -> e.getName().equals("fields.csv") || e.getName().equals("methods.csv") ||
-                    e.getName().equals("params.csv")).forEach(e -> {
-                try (NamedCsvReader reader = NamedCsvReader.builder().build(new InputStreamReader(zip.getInputStream(e)))) {
+            zip.stream().filter(entry -> entry.getName().endsWith(".csv")).forEach(entry -> {
+                try {
+                    var inputStreamReader = new InputStreamReader(zip.getInputStream(entry));
+                    var reader = NamedCsvReader.builder().build(inputStreamReader);
                     reader.forEach(row -> names.put(row.getField("searge"), row.getField("name")));
-                } catch (IOException e1) {
-                    throw new RuntimeException(e1);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
                 }
             });
         }
+
         return names;
     }
 
-    private static String replaceMappings(String line, Map<String, String> names) {
-        Matcher matcher = Pattern.compile("(f|m|p)_\\d+?_").matcher(line);
+    private static String rename(String line, Map<String, String> names) {
+        Matcher matcher = SRG_FINDER.matcher(line);
 
         while (matcher.find()) {
             String searge = matcher.group();
@@ -74,34 +72,28 @@ public class Srg2Mcp {
         return line;
     }
 
-    private static void processFilesInFolder(File folder, Map<String, String> names) throws IOException {
-        if (folder.isDirectory()) {
-            File[] files = folder.listFiles();
-            if (files != null) {
-                for (File file : files) {
-                    if (file.isDirectory()) {
-                        processFilesInFolder(file, names);
-                    } else {
-                        processFile(file, names);
-                    }
-                }
+    private static void processFolder(File folder, Map<String, String> names) throws IOException {
+        if (!folder.isDirectory()) return;
+
+        File[] files = folder.listFiles();
+        if (files == null) return;
+
+        for (File file : files) {
+            if (file.isDirectory()) {
+                processFolder(file, names);
+            } else if (file.getName().endsWith(".java")) {
+                processFile(file, names);
             }
         }
     }
 
     private static void processFile(File file, Map<String, String> names) throws IOException {
-        if (file.getName().endsWith(".java")) {
-            List<String> lines = Files.readLines(file, StandardCharsets.UTF_8);
-            List<String> modifiedLines = new ArrayList<>();
+        List<String> lines = Files.readLines(file, StandardCharsets.UTF_8);
 
+        try (FileWriter writer = new FileWriter(file)) {
             for (String line : lines) {
-                modifiedLines.add(replaceMappings(line, names));
-            }
-
-            try (FileWriter writer = new FileWriter(file)) {
-                for (String line : modifiedLines) {
-                    writer.write(line + System.lineSeparator());
-                }
+                String mod = rename(line, names);
+                writer.write(mod + System.lineSeparator());
             }
         }
     }
