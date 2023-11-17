@@ -9,7 +9,7 @@ import java.nio.file.Path;
 public class GeneratePatches {
     public static void main(String[] args) throws IOException {
         if (args.length < 3) {
-            System.out.println("Usage: GeneratePatches <base.jar> <output.zip> <patched.jar>");
+            System.out.println("Usage: GeneratePatches <base> <output.zip> <modified>");
             return;
         }
 
