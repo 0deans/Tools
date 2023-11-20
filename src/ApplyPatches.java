@@ -34,12 +34,13 @@ public class ApplyPatches {
                 .patchesPrefix("");
 
         var result = builder.build().operate();
-        result.summary.print(System.out, true);
 
         int exit = result.exit;
         if (exit != 0 && exit != 1) {
             throw new RuntimeException("DiffPatch failed with exit code: " + exit);
         }
+
+        result.summary.print(System.out, true);
 
         TimeStamp time = TimeStamp.fromNow(startTime);
         System.out.printf("Finished in: %s", time);
